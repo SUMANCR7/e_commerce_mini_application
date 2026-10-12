@@ -12,6 +12,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  String searchQuery = '';
 
   @override
   void initState() {
@@ -26,51 +27,142 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: Text('E-commerce'),
         actions: [
-          IconButton(onPressed: (){
-            Navigator.push(context, MaterialPageRoute(builder: (context)=>OrderHistoryScreen()));
-
-          }, icon: Icon(Icons.history),
-          tooltip: 'Order History',
-          )
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => OrderHistoryScreen()),
+              );
+            },
+            icon: Icon(Icons.history),
+            tooltip: 'Order History',
+          ),
         ],
       ),
 
       body: Consumer<ProductProviders>(
-        builder: (context, provider, child){
-          return ListView.builder(
-              itemCount: provider.products.length,
-              itemBuilder: (context, index){
-                final product = provider.products[index];
+        builder: (context, provider, child) {
+          final filteredProducts = provider.products.where((product) {
+            return product.title.toLowerCase().contains(
+              searchQuery.toLowerCase(),
+            );
+          }).toList();
 
-                return Card(
-                  child: ListTile(
-                    //--Home Screen-->>> Product details screen
-                      onTap: (){
-                      Navigator.push(context,
-                          MaterialPageRoute(
-                              builder: (context)=>ProductDetailsScreen(product: product)));
-                    },
-
-                    leading: Image.network(
-                      product.image,
-                      width: 80,
-                      height: 80,
-                      fit: BoxFit.cover,
+          return Column(
+            children: [
+              Padding(
+                padding: EdgeInsets.all(12),
+                child: TextField(
+                  onChanged: (value) {
+                    setState(() {
+                      searchQuery = value;
+                    });
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'Search products...',
+                    prefixIcon: Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    title: Text(product.title),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('\$${product.price}'),
-                        Text('⭐ ${product.rating}'),
-                      ],
-                    )
-
-
                   ),
-                );
-              },
-              );
+                ),
+              ),
+
+              Expanded(
+                child: GridView.builder(
+                  padding: EdgeInsets.all(12),
+                  itemCount: filteredProducts.length,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: .70,
+                  ),
+
+                  itemBuilder: (context, index) {
+                    final product = filteredProducts[index];
+
+                    return Card(
+                      clipBehavior: Clip.antiAlias, // Set the Picture
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ProductDetailsScreen(
+                                product: product,
+                              ), // Product details screen
+                            ),
+                          );
+                        },
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Picture
+                            Expanded(
+                              child: Image.network(
+                                product.image,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    const Icon(Icons.error),
+                              ),
+                            ),
+
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Title
+                                  Text(
+                                    product.title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+
+                                  // Price
+                                  Text(
+                                    '\$${product.price}',
+                                    style: const TextStyle(
+                                      color: Colors.green,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+
+                                  // Rating
+                                  Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.star,
+                                        size: 14,
+                                        color: Colors.amber,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '${product.rating}',
+                                        style: const TextStyle(fontSize: 12),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
         },
       ),
     );
